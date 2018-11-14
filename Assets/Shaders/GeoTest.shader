@@ -16,11 +16,18 @@
 	}
 	CGINCLUDE
 
+		struct appdata {
+			float4 vertex : POSITION;
+			float2 texcoord : TEXCOORD0;
+			float2 texcoord2 : TEXCOORD1;
+		};
+
 		struct v2geo
 		{
 			float4 vertex : SV_POSITION;
 			float size : TEXCOORD0;
 			float2 dir : TEXCOORD1;
+			float2 uv : TEXCOORD2;
 		};
 
 		float4 _Wind0;
@@ -96,13 +103,13 @@
 			float4 _BodyColor;
 			float _Transmittance;
 
-			void AppendTriangle(g2f o, inout TriangleStream<g2f> os, float4 bottomPos, float4 topPos, float3 bottomNor, float3 topNor, float bottomV, float topV, float size) {
+			void AppendTriangle(g2f o, inout TriangleStream<g2f> os, float4 bottomPos, float4 topPos, float3 bottomNor, float3 topNor, float bottomV, float topV, float2 uv, float size) {
 				float4 epos = bottomPos + float4(-_Width * size, 0, 0, 0);
 				
 
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
-				o.uv = float2(0, bottomV);
+				o.uv = float2(uv.x, bottomV);
 				o.worldNormal = bottomNor;
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
@@ -112,7 +119,7 @@
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
 				o.worldNormal = topNor;
-				o.uv = float2(0, topV);
+				o.uv = float2(uv.x, topV);
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
 				os.Append(o);
@@ -121,7 +128,7 @@
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
 				o.worldNormal = topNor;
-				o.uv = float2(1, topV);
+				o.uv = float2(uv.y, topV);
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
 				os.Append(o);
@@ -132,7 +139,7 @@
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
 				o.worldNormal = bottomNor;
-				o.uv = float2(0, bottomV);
+				o.uv = float2(uv.x, bottomV);
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
 				os.Append(o);
@@ -141,7 +148,7 @@
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
 				o.worldNormal = topNor;
-				o.uv = float2(1, topV);
+				o.uv = float2(uv.y, topV);
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
 				os.Append(o);
@@ -150,20 +157,21 @@
 				o.pos = mul(UNITY_MATRIX_P, epos);
 				o.worldPos = mul(UNITY_MATRIX_I_V, epos);
 				o.worldNormal = bottomNor;
-				o.uv = float2(1, bottomV);
+				o.uv = float2(uv.y, bottomV);
 				UNITY_TRANSFER_FOG(o, o.pos);
 				TRANSFER_SHADOW(o);
 				os.Append(o);
 				os.RestartStrip();
 			}
 			
-			v2geo vert (appdata_base v)
+			v2geo vert (appdata v)
 			{
 				v2geo o;
 				//o.vertex = mul(UNITY_MATRIX_V, mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)));
 				o.vertex = mul(unity_ObjectToWorld, float4(v.vertex.x, 0.0, v.vertex.z, 1.0));
 				o.size = v.vertex.y;
 				o.dir = v.texcoord.xy;
+				o.uv = v.texcoord2;
 				return o;
 			}
 
@@ -192,10 +200,10 @@
 				pos3 = mul(UNITY_MATRIX_V, pos3); 
 				pos4 = mul(UNITY_MATRIX_V, pos4);
 
-				AppendTriangle(o, os, pos0, pos1, n0, (n0+n1)*0.5, 0, 0.25, i[0].size);
-				AppendTriangle(o, os, pos1, pos2, (n0 + n1)*0.5, (n1 + n2)*0.5, 0.25, 0.5, i[0].size);
-				AppendTriangle(o, os, pos2, pos3, (n1 + n2)*0.5, (n2 + n3)*0.5, 0.5, 0.75, i[0].size);
-				AppendTriangle(o, os, pos3, pos4, (n2 + n3)*0.5, n3, 0.75, 1.0, i[0].size);
+				AppendTriangle(o, os, pos0, pos1, n0, (n0+n1)*0.5, 0, 0.25, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos1, pos2, (n0 + n1)*0.5, (n1 + n2)*0.5, 0.25, 0.5, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos2, pos3, (n1 + n2)*0.5, (n2 + n3)*0.5, 0.5, 0.75, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos3, pos4, (n2 + n3)*0.5, n3, 0.75, 1.0, i[0].uv, i[0].size);
 			}
 			
 			fixed4 frag (g2f i) : SV_Target
@@ -240,12 +248,13 @@
 				float2 uv:TEXCOORD1;
 			};
 
-			v2geo vert(appdata_base v)
+			v2geo vert(appdata v)
 			{
 				v2geo o;
 				o.vertex = mul(unity_ObjectToWorld, float4(v.vertex.x, 0.0, v.vertex.z, 1.0));
 				o.size = v.vertex.y;
 				o.dir = v.texcoord.xy;
+				o.uv = v.texcoord2;
 				return o;
 			}
 
@@ -273,24 +282,24 @@
 				opos = UnityApplyLinearShadowBias(opos);
 #endif
 
-			void AppendTriangle(g2f o, inout TriangleStream<g2f> os, float4 bottomPos, float4 topPos, float3 bottomNor, float3 topNor, float bottomV, float topV, float size) {
+			void AppendTriangle(g2f o, inout TriangleStream<g2f> os, float4 bottomPos, float4 topPos, float3 bottomNor, float3 topNor, float bottomV, float topV, float2 uv, float size) {
 				float4 epos = bottomPos + float4(-_Width * size, 0, 0, 0);
 				float3 wpos = mul(UNITY_MATRIX_I_V, epos);
 
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,bottomNor,o.pos)
-				o.uv = float2(0, bottomV);
+				o.uv = float2(uv.x, bottomV);
 				os.Append(o);
 
 				epos = topPos + float4(-_Width * size, 0, 0, 0);
 				wpos = mul(UNITY_MATRIX_I_V, epos);
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,topNor,o.pos)
-				o.uv = float2(0, topV);
+				o.uv = float2(uv.x, topV);
 				os.Append(o);
 
 				epos = topPos + float4(_Width*size, 0, 0, 0);
 				wpos = mul(UNITY_MATRIX_I_V, epos);
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,topNor,o.pos)
-				o.uv = float2(1, topV);
+				o.uv = float2(uv.y, topV);
 				os.Append(o);
 				os.RestartStrip();
 
@@ -298,19 +307,19 @@
 				epos = bottomPos + float4(-_Width * size, 0, 0, 0);
 				wpos = mul(UNITY_MATRIX_I_V, epos);
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,bottomNor,o.pos)
-				o.uv = float2(0, bottomV);
+				o.uv = float2(uv.x, bottomV);
 				os.Append(o);
 
 				epos = topPos + float4(_Width*size, 0, 0, 0);
 				wpos = mul(UNITY_MATRIX_I_V, epos);
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,topNor,o.pos)
-				o.uv = float2(1, topV);
+				o.uv = float2(uv.y, topV);
 				os.Append(o);
 
 				epos = bottomPos + float4(_Width*size, 0, 0, 0);
 				wpos = mul(UNITY_MATRIX_I_V, epos);
 				TRANSFER_GEO_SHADOW_CASTER_NOPOS(o,wpos,bottomNor,o.pos)
-				o.uv = float2(1, bottomV);
+				o.uv = float2(uv.y, bottomV);
 				os.Append(o);
 				os.RestartStrip();
 			}
@@ -340,10 +349,10 @@
 				pos3 = mul(UNITY_MATRIX_V, pos3);
 				pos4 = mul(UNITY_MATRIX_V, pos4);
 
-				AppendTriangle(o, os, pos0, pos1, n0, (n0 + n1)*0.5, 0, 0.25, i[0].size);
-				AppendTriangle(o, os, pos1, pos2, (n0 + n1)*0.5, (n1 + n2)*0.5, 0.25, 0.5, i[0].size);
-				AppendTriangle(o, os, pos2, pos3, (n1 + n2)*0.5, (n2 + n3)*0.5, 0.5, 0.75, i[0].size);
-				AppendTriangle(o, os, pos3, pos4, (n2 + n3)*0.5, n3, 0.75, 1.0, i[0].size);
+				AppendTriangle(o, os, pos0, pos1, n0, (n0 + n1)*0.5, 0, 0.25, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos1, pos2, (n0 + n1)*0.5, (n1 + n2)*0.5, 0.25, 0.5, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos2, pos3, (n1 + n2)*0.5, (n2 + n3)*0.5, 0.5, 0.75, i[0].uv, i[0].size);
+				AppendTriangle(o, os, pos3, pos4, (n2 + n3)*0.5, n3, 0.75, 1.0, i[0].uv, i[0].size);
 			}
 
 			float4 frag(g2f i) : SV_Target
