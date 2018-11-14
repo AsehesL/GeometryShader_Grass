@@ -11,8 +11,10 @@ public class PointCloudTest : MonoBehaviour
     public float height;
 
     public Texture2D mask;
+    public Texture2D dirTex;
 
     public Texture2D size;
+    public float dirOffset;
     //public float width;
     //public float height;
     
@@ -25,6 +27,7 @@ public class PointCloudTest : MonoBehaviour
 	    m_Mesh = new Mesh();
 
 	    List<Vector3> vlist = new List<Vector3>();
+	    List<Vector2> ulist = new List<Vector2>();
 	    List<int> ilist = new List<int>();
 	    for (int i = 0; i < count; i++)
 	    {
@@ -34,15 +37,19 @@ public class PointCloudTest : MonoBehaviour
             int pixY = (int)(mask.height-1- y * mask.height);
 	        float maskV = mask.GetPixel(pixX, pixY).r;
             float s = size.GetPixel(pixX, pixY).r;
+	        Color dir = dirTex.GetPixel(pixX, pixY);
             float randPriority = Random.Range(0.0f, 1.0f);
 	        if (randPriority < maskV)
 	        {
 	            Vector3 p = new Vector3(-width*0.5f + width*x, s, -height*0.5f + height*y);
+	            Vector2 u = new Vector2((dir.r*2-1)*dirOffset, (dir.g*2-1)*dirOffset);
 	            ilist.Add(vlist.Count);
                 vlist.Add(p);
-            }
+	            ulist.Add(u);
+	        }
         }
 	    m_Mesh.SetVertices(vlist);
+	    m_Mesh.SetUVs(0, ulist);
 	    m_Mesh.SetIndices(ilist.ToArray(), MeshTopology.Points, 0);
 
 	    m_MeshFilter = gameObject.AddComponent<MeshFilter>();
