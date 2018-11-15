@@ -16,6 +16,7 @@ public class PointCloudTest : MonoBehaviour
     public Texture2D dirTex;
 
     public Texture2D size;
+    public float sizeBegin;
     public float dirOffset;
     //public float width;
     //public float height;
@@ -48,7 +49,7 @@ public class PointCloudTest : MonoBehaviour
 	        int pixX = (int) (mask.width-1-x*mask.width);
             int pixY = (int)(mask.height-1- y * mask.height);
 	        float maskV = mask.GetPixel(pixX, pixY).r;
-            float s = size.GetPixel(pixX, pixY).r;
+	        float s = sizeBegin + (1.0f - sizeBegin)*size.GetPixel(pixX, pixY).r;
 	        Color dir = dirTex.GetPixel(pixX, pixY);
             float randPriority = Random.Range(0.0f, 1.0f);
 	        if (randPriority < maskV)

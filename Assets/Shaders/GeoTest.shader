@@ -100,7 +100,7 @@
 				half3 sh : TEXCOORD3; // SH
 #endif
 				UNITY_FOG_COORDS(4)
-				SHADOW_COORDS(5)
+				UNITY_SHADOW_COORDS(5)
 			};
 
 			float4 _BodyColor;
@@ -130,7 +130,7 @@
 				o.worldNormal = bottomNor;
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 
 				epos = topPos + float4(-_Width * size, 0, 0, 0);
@@ -140,7 +140,7 @@
 				o.uv = float2(uv.x, topV);
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 
 				epos = topPos + float4(_Width*size, 0, 0, 0);
@@ -150,7 +150,7 @@
 				o.uv = float2(uv.y, topV);
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 				os.RestartStrip();
 
@@ -162,7 +162,7 @@
 				o.uv = float2(uv.x, bottomV);
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 
 				epos = topPos + float4(_Width*size, 0, 0, 0);
@@ -172,7 +172,7 @@
 				o.uv = float2(uv.y, topV);
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 
 				epos = bottomPos + float4(_Width*size, 0, 0, 0);
@@ -182,7 +182,7 @@
 				o.uv = float2(uv.y, bottomV);
 				ShadeSH(o);
 				UNITY_TRANSFER_FOG(o, o.pos);
-				TRANSFER_SHADOW(o);
+				UNITY_TRANSFER_SHADOW(o, o.uv);
 				os.Append(o);
 				os.RestartStrip();
 			}
