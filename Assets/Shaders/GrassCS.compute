@@ -53,7 +53,7 @@ float FrustumCulling(float4 pos, float scale) {
 
 	return (code != 0) ? 0.0 : 1.0;*/
 
-	pos = mul(pos, _Projection);
+	pos = mul(_Projection, pos);
 	float result = 1.0;
 	if (pos.x < -pos.w) result *= 0.0;
 	if (pos.x > pos.w) result *= 0.0;

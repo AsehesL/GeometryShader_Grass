@@ -123,12 +123,14 @@ public class GrassRenderer : MonoBehaviour {
         //if(Camera.current != cullingCamera)
         //    return;
         Matrix4x4 projection = Camera.current.projectionMatrix * Camera.current.worldToCameraMatrix;
-
         computeShader.SetMatrix("_Projection", projection);
+
 
         material.SetPass(0);
         //Graphics.DrawProcedural(MeshTopology.Points, 1, m_RenderCount);
         Graphics.DrawProceduralIndirect(MeshTopology.Points, m_ArgsBuffer);
+
+        
         m_ArgsBuffer.SetData(m_Args);
     }
 
