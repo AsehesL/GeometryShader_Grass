@@ -1,0 +1,75 @@
+﻿//#pragma kernel GenerateGrass
+#pragma kernel Culling
+
+struct GrassSeed
+{
+	float3 position;
+
+	float2 texcoord;
+
+	float2 direction;
+
+	float scale;
+};
+
+RWStructuredBuffer<GrassSeed> _Seeds;
+RWStructuredBuffer<uint> _Args;
+RWStructuredBuffer<GrassSeed> _Result;
+
+float4x4 _Projection;
+float _MaxSize;
+
+//[numthreads(1024,1,1)]
+//void GenerateGrass (uint3 id : SV_DispatchThreadID)
+//{
+//	// TODO: insert actual code here!
+//
+//	Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+//}
+
+int ComputeProjCode(float4 pos, float4x4 projection) {
+	pos = mul(pos, projection);
+	int code = 0;
+	if (pos.x < -pos.w) code |= 0x01;
+	if (pos.x > pos.w) code |= 0x02;
+	if (pos.y < -pos.w) code |= 0x04;
+	if (pos.y > pos.w) code |= 0x08;
+	if (pos.z < -pos.w) code |= 0x10;
+	if (pos.z > pos.w) code |= 0x20;
+	return code;
+}
+
+float FrustumCulling(float4 pos, float scale) {
+	/*float size = _MaxSize * scale;
+	float halfsize = size * 0.5;
+	int code = ComputeProjCode(float4(pos.x - halfsize, pos.y, pos.z - halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x - halfsize, pos.y, pos.z + halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x + halfsize, pos.y, pos.z + halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x + halfsize, pos.y, pos.z - halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x - halfsize, pos.y + size, pos.z - halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x - halfsize, pos.y + size, pos.z + halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x + halfsize, pos.y + size, pos.z + halfsize, pos.w), _Projection);
+	code &= ComputeProjCode(float4(pos.x + halfsize, pos.y + size, pos.z - halfsize, pos.w), _Projection);
+
+	return (code != 0) ? 0.0 : 1.0;*/
+
+	pos = mul(pos, _Projection);
+	float result = 1.0;
+	if (pos.x < -pos.w) result *= 0.0;
+	if (pos.x > pos.w) result *= 0.0;
+	if (pos.y < -pos.w) result *= 0.0;
+	if (pos.y > pos.w) result *= 0.0;
+	if (pos.z < -pos.w) result *= 0.0;
+	if (pos.z > pos.w) result *= 0.0;
+	return result;
+}
+
+[numthreads(1024,1,1)]
+void Culling(uint3 id : SV_DispatchThreadID)
+{
+	if (FrustumCulling(float4(_Seeds[id.x].position.xyz, 1.0), _Seeds[id.x].scale) > 0.5) {
+		uint index = 0;
+		InterlockedAdd(_Args[1], 1, index); 
+		_Result[index] = _Seeds[id.x];
+	}
+}

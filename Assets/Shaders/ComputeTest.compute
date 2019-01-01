@@ -1,27 +1,32 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel Culling
 
 struct GrassSeed
 {
 	float3 position;
-	float size;
+
+	float2 texcoord;
+
+	float2 direction;
+
+	float scale;
 };
+
+RWStructuredBuffer<GrassSeed> _Seeds;
+RWStructuredBuffer<uint> _Args;
+RWStructuredBuffer<GrassSeed> _Result;
 
 float4 _Point;
 float _ClipSize;
 
-RWStructuredBuffer<GrassSeed> GrassSeeds;
-RWStructuredBuffer<uint> Args;
-RWStructuredBuffer<GrassSeed> Results;
-
 [numthreads(1024,1,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void Culling(uint3 id : SV_DispatchThreadID)
 {
-	float l = length(GrassSeeds[id.x].position.xz - _Point.xz);
+	float l = length(_Seeds[id.x].position.xz - _Point.xz);
 	if (l < _ClipSize * 0.5) {
 		uint index = 0;
 		//Args[1] = Args[1] + 1;
-		InterlockedAdd(Args[1], 1, index);
-		Results[index] = GrassSeeds[id.x];
+		InterlockedAdd(_Args[1], 1, index);
+		_Result[index] = _Seeds[id.x];
 	}
 }

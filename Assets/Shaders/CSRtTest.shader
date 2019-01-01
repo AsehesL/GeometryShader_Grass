@@ -25,10 +25,15 @@ Shader "Unlit/CSRtTest"
 			struct GrassSeed
 			{
 				float3 position;
-				float size;
+
+				float2 texcoord;
+
+				float2 direction;
+
+				float scale;
 			};
 
-			StructuredBuffer<GrassSeed> GrassSeeds;
+			StructuredBuffer<GrassSeed> _Seeds;
 
 			struct v2g
 			{
@@ -43,8 +48,8 @@ Shader "Unlit/CSRtTest"
 			v2g vert (uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 			{
 				v2g o;
-				o.vertex = float4(GrassSeeds[instance_id].position.xyz, 1.0);
-				o.size = GrassSeeds[instance_id].size;
+				o.vertex = float4(_Seeds[instance_id].position.xyz, 1.0);
+				o.size = _Seeds[instance_id].scale;
 				return o;
 			}
 
