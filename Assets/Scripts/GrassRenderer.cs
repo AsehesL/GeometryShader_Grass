@@ -120,8 +120,8 @@ public class GrassRenderer : MonoBehaviour {
 
     void OnRenderObject()
     {
-        //if(Camera.current != cullingCamera)
-        //    return;
+        if (Camera.current != cullingCamera)
+            return;
         Matrix4x4 projection = Camera.current.projectionMatrix * Camera.current.worldToCameraMatrix;
         computeShader.SetMatrix("_Projection", projection);
 
