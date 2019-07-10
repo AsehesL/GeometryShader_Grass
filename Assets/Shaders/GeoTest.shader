@@ -13,6 +13,7 @@
 		_Wind3 ("Wind3", vector) = (0, 0, 0, 0)
 		_BodyColor("BodyColor", color) = (1,1,1,1)
 		_Transmittance("Transmittance", float) = 1
+		_AddDirFactor ("AddDirFactor", float) = 1
 	}
 	CGINCLUDE
 
@@ -26,7 +27,7 @@
 		{
 			float4 vertex : SV_POSITION;
 			float size : TEXCOORD0;
-			float2 dir : TEXCOORD1;
+			float4 dir : TEXCOORD1;
 			float2 uv : TEXCOORD2;
 		};
 
@@ -43,6 +44,11 @@
 		sampler2D _MainTex;
 
 		float _Cutoff;
+
+		float _AddDirFactor;
+
+		sampler2D internal_VRTexture;
+		float4x4 internal_VRProj;
 
 		float2 CalculateSingleWindInfluence(float4 param, float2 pos) {
 			float2 dir = float2(cos(param.x), sin(param.x));
@@ -193,7 +199,21 @@
 				//o.vertex = mul(UNITY_MATRIX_V, mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)));
 				o.vertex = mul(unity_ObjectToWorld, float4(v.vertex.x, 0.0, v.vertex.z, 1.0));
 				o.size = v.vertex.y;
-				o.dir = v.texcoord.xy;
+
+				float4 proj = mul(internal_VRProj, o.vertex);
+				proj = ComputeScreenPos(proj);
+
+				float4 projuv;
+				projuv.xy = proj.xy / proj.w;
+#if UNITY_UV_STARTS_AT_TOP
+				projuv.y = 1 - projuv.y;
+#endif
+				projuv.z = 0.0;
+				projuv.w = 0.0;
+
+				fixed2 dircol = tex2Dlod(internal_VRTexture, projuv).rg;
+
+				o.dir = half4(v.texcoord.xy, dircol.rg * 2 - 1);
 				o.uv = v.texcoord2;
 				return o;
 			}
@@ -204,6 +224,8 @@
 				UNITY_INITIALIZE_OUTPUT(g2f, o);
 
 				fixed2 dir = CalculateWindInfluence(i[0].vertex.xz) + i[0].dir.xy;
+				fixed2 adddir = i[0].dir.zw * _AddDirFactor;
+				dir = lerp(dir, adddir, saturate(length(adddir)));
 				fixed len = _Height * 0.25*i[0].size;
 
 				float4 pos0 = i[0].vertex;
@@ -406,7 +428,21 @@
 				v2geo o;
 				o.vertex = mul(unity_ObjectToWorld, float4(v.vertex.x, 0.0, v.vertex.z, 1.0));
 				o.size = v.vertex.y;
-				o.dir = v.texcoord.xy;
+
+				float4 proj = mul(internal_VRProj, o.vertex);
+				proj = ComputeScreenPos(proj);
+
+				float4 projuv;
+				projuv.xy = proj.xy / proj.w;
+#if UNITY_UV_STARTS_AT_TOP
+				projuv.y = 1 - projuv.y;
+#endif
+				projuv.z = 0.0;
+				projuv.w = 0.0;
+
+				fixed2 dircol = tex2Dlod(internal_VRTexture, projuv).rg;
+
+				o.dir = half4(v.texcoord.xy, dircol.rg * 2 - 1);
 				o.uv = v.texcoord2;
 				return o;
 			}
@@ -416,7 +452,10 @@
 				g2f o;
 				UNITY_INITIALIZE_OUTPUT(g2f, o);
 
+				/*fixed2 dir = CalculateWindInfluence(i[0].vertex.xz) + i[0].dir.xy;*/
 				fixed2 dir = CalculateWindInfluence(i[0].vertex.xz) + i[0].dir.xy;
+				fixed2 adddir = i[0].dir.zw * _AddDirFactor;
+				dir = lerp(dir, adddir, saturate(length(adddir)));
 				fixed len = _Height * 0.25*i[0].size;
 
 				float4 pos0 = i[0].vertex;
@@ -518,7 +557,21 @@
 				v2geo o;
 				o.vertex = mul(unity_ObjectToWorld, float4(v.vertex.x, 0.0, v.vertex.z, 1.0));
 				o.size = v.vertex.y;
-				o.dir = v.texcoord.xy;
+
+				float4 proj = mul(internal_VRProj, o.vertex);
+				proj = ComputeScreenPos(proj);
+
+				float4 projuv;
+				projuv.xy = proj.xy / proj.w;
+#if UNITY_UV_STARTS_AT_TOP
+				projuv.y = 1 - projuv.y;
+#endif
+				projuv.z = 0.0;
+				projuv.w = 0.0;
+
+				fixed2 dircol = tex2Dlod(internal_VRTexture, projuv).rg;
+
+				o.dir = half4(v.texcoord.xy, dircol.rg * 2 - 1);
 				o.uv = v.texcoord2;
 				return o;
 			}
@@ -593,7 +646,10 @@
 			void geom(point v2geo i[1], inout TriangleStream<g2f> os) {
 				g2f o;
 
+				//float2 dir = CalculateWindInfluence(i[0].vertex.xz) + i[0].dir.xy;
 				float2 dir = CalculateWindInfluence(i[0].vertex.xz) + i[0].dir.xy;
+				float2 adddir = i[0].dir.zw * _AddDirFactor;
+				dir = lerp(dir, adddir, saturate(length(adddir)));
 				float len = _Height * 0.25*i[0].size;
 
 				float4 pos0 = i[0].vertex;
