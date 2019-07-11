@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GrassRenderer : MonoBehaviour {
+/// <summary>
+/// 草渲染器-ComputeShader版本：使用了ComputeShader坐视锥裁剪
+/// </summary>
+public class GrassRendererCS : MonoBehaviour {
 
     /// <summary>
     /// 草的种子结构体
@@ -43,11 +46,10 @@ public class GrassRenderer : MonoBehaviour {
     public float sizeBegin;
     public float dirOffset;
 
+    /// <summary>
+    /// 剔除相机
+    /// </summary>
     public Camera cullingCamera;
-
-    //public Transform point;
-    //public float clipSize;
-
     /// <summary>
     /// 处理草种子的生成与剔除
     /// </summary>
@@ -55,8 +57,17 @@ public class GrassRenderer : MonoBehaviour {
 
     public Material material;
 
+    /// <summary>
+    /// 草种子Buffer
+    /// </summary>
     private ComputeBuffer m_GrassBuffer;
+    /// <summary>
+    /// 剔除参数Buffer
+    /// </summary>
     private ComputeBuffer m_ArgsBuffer;
+    /// <summary>
+    /// 剔除结果Buffer
+    /// </summary>
     private ComputeBuffer m_ResultBuffer;
 
     private GrassSeed[] m_Seeds;
@@ -112,8 +123,6 @@ public class GrassRenderer : MonoBehaviour {
     {
         
         computeShader.SetFloat("_MaxSize", m_MaxSize);
-        //computeShader.SetVector("_Point", point.position);
-        //computeShader.SetFloat("_ClipSize", clipSize);
 
         computeShader.Dispatch(m_CullingKernelIndex, m_DispatchCount, 1, 1);
     }
@@ -123,20 +132,20 @@ public class GrassRenderer : MonoBehaviour {
         if (Camera.current != cullingCamera)
             return;
         Matrix4x4 projection = Camera.current.projectionMatrix * Camera.current.worldToCameraMatrix;
-        computeShader.SetMatrix("_Projection", projection);
+        computeShader.SetMatrix("_Projection", projection);//设置裁剪矩阵
 
 
         material.SetPass(0);
-        //Graphics.DrawProcedural(MeshTopology.Points, 1, m_RenderCount);
-        Graphics.DrawProceduralIndirect(MeshTopology.Points, m_ArgsBuffer);
-
+        Graphics.DrawProceduralIndirect(MeshTopology.Points, m_ArgsBuffer);//间接绘制
         
         m_ArgsBuffer.SetData(m_Args);
     }
 
+    /// <summary>
+    /// 生成草的点集数据
+    /// </summary>
     private void GenerateGrassSeeds()
     {
-        //m_Seeds = new GrassSeed[count];
         List<GrassSeed> seeds = new List<GrassSeed>();
 
         float uw = grassDatas.Count > 0 ? 1.0f / grassDatas.Count : 1.0f;
